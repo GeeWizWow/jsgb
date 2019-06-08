@@ -5,7 +5,7 @@ const BufferUtils = require('../../utils/bufferUtils');
 class ExternalStorage {
     constructor() {
         this.path = null;
-        this.baseStream = Buffer.alloc(0);
+        this.baseStream = new Uint8Array(0);
         this.isActive = false;
         this.isFdDirty = false;
         this.interval = null;
@@ -13,7 +13,7 @@ class ExternalStorage {
 
     initialize(cartridge) {
         this.path = path.join(process.env.APPDATA, 'jsgb', `${cartridge.getTitle()}.sav`);
-        this.baseStream = Buffer.alloc(cartridge.getExternalRamSize());
+        this.baseStream = new Uint8Array(cartridge.getExternalRamSize());
         this.isActive = true;
 
         this.initializeFileStream();
@@ -39,7 +39,7 @@ class ExternalStorage {
         }
 
         if (fs.existsSync(this.path)) {
-            this.baseStream = fs.readFileSync(this.path);
+            this.baseStream = new Uint8Array(fs.readFileSync(this.path));
         }
 
         fs.openSync(this.path, 'w');

@@ -1,3 +1,4 @@
+const { readInt8, readUInt16LE } = require('../utils/bufferUtils');
 
 class Instruction {
     constructor(offset, operation, operand) {
@@ -7,7 +8,7 @@ class Instruction {
     }
 
     get operand8 () {
-        return this.rawOperand.readInt8(0);
+        return readInt8(this.rawOperand, 0);
     }
 
     get operandU8 () {
@@ -15,7 +16,7 @@ class Instruction {
     }
 
     get operand16 () {
-        return this.rawOperand.readUInt16LE(0);
+        return readUInt16LE(this.rawOperand, 0);
     }
 
     execute (gameBoy) {

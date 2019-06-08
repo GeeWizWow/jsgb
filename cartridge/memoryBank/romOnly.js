@@ -5,7 +5,7 @@ class RomOnly {
         this.cartridge = cartridge;
 
         this.ramEnabled = false;
-        this.ramBank = Buffer.alloc(this.cartridge.hasRam ? 0x2000 : 0);
+        this.ramBank = new Uint8Array(this.cartridge.hasRam ? 0x2000 : 0);
     }
 
     copy() {

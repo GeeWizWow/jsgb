@@ -7,7 +7,7 @@ const BufferUtils = require('../utils/bufferUtils');
 class Spu {
     constructor(gameboy) {
         this.gameboy = gameboy;
-        this.unused = Buffer.alloc(9);
+        this.unused = new Uint8Array(9);
 
         this.waveChannel = new WaveSoundChannel(this);
         this.channels = [new SquareSweepChannel(this), new SquareChannel(this), this.waveChannel, new NoiseChannel(this)];

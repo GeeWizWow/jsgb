@@ -18,7 +18,7 @@ class WaveSoundChannel {
         this.NR3 = 0;
         this.NR4 = 0;
 
-        this.waveRam = Buffer.alloc(0x10);
+        this.waveRam = new Uint8Array(0x10);
     }
 
     copy() {

@@ -9,7 +9,7 @@ class MemoryBank1 {
         this.romRamMode = false;
 
         this.ramEnabled = false;
-        this.romBank = Buffer.alloc(0x4000);
+        this.romBank = new Uint8Array(0x4000);
     }
 
     copy() {
@@ -27,7 +27,7 @@ class MemoryBank1 {
         this.ramBankIndex = quicksaveData.ramBankIndex;
         this.romRamMode = quicksaveData.romRamMode;
         this.ramEnabled = quicksaveData.ramEnabled;
-        this.romBank = Buffer.deserialize(quicksaveData.romBank);
+        this.romBank = BufferUtils.deserialize(quicksaveData.romBank);
     }
 
     initialize() {

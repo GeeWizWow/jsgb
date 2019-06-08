@@ -13,9 +13,9 @@ class Memory {
         this.dmaManager = null;
         this.spu = null;
 
-        this.internalRam = Buffer.alloc(0x1000);
-        this.highInternalRam = Buffer.alloc(0x7f);
-        this.internalSwitchableRam = Buffer.alloc(this.cartridge.isGameboyColour ? 0x7000 : 0x1000);
+        this.internalRam = new Uint8Array(0x1000);
+        this.highInternalRam = new Uint8Array(0x7f);
+        this.internalSwitchableRam = new Uint8Array(this.cartridge.isGameboyColour ? 0x7000 : 0x1000);
 
         this.internalRamBank = 1;
     }
@@ -67,11 +67,12 @@ class Memory {
     }
 
     read16Bit(address) {
-        return this.readBytes(address, 2).readUInt16LE(0);
+        const buff = this.readBytes(address, 2);
+        return buff[0] | (buff[1] << 8);
     }
 
     readBytes(address, length) {
-        const result = Buffer.alloc(length);
+        const result = new Uint8Array(length);
         for (let i = 0; i < length; i++) {
             result[i] = this.readByte(address + i);
         }
@@ -211,8 +212,10 @@ class Memory {
     }
 
     write16Bit(address, value) {
-        const buffer = Buffer.alloc(2);
-        buffer.writeUInt16LE(value);
+        const buffer = new Uint8Array(2);
+
+        buffer[0] = value & 0xff;
+        buffer[1] = value >>> 8;
 
         return this.writeBytes(address, buffer);
     }

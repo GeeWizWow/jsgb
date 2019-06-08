@@ -4,10 +4,10 @@ class MemoryBank3 {
     constructor(cartridge) {
         this.cartridge = cartridge;
 
-        this.romBank = Buffer.alloc(0x4000);
+        this.romBank = new Uint8Array(0x4000);
         this.romBankIndex = 0;
         this.ramBankOrRtcIndex = 0;
-        this.rtc = Buffer.alloc(5);
+        this.rtc = new Uint8Array(5);
     }
 
     copy() {

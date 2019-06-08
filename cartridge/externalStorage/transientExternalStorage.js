@@ -2,12 +2,12 @@ const BufferUtils = require('../../utils/bufferUtils');
 
 class ExternalStorage {
     constructor() {
-        this.baseStream = Buffer.alloc(0);
+        this.baseStream = new Uint8Array(0);
         this.isActive = false;
     }
 
     initialize(cartridge) {
-        this.baseStream = Buffer.alloc(cartridge.getExternalRamSize());
+        this.baseStream = new Uint8Array(cartridge.getExternalRamSize());
         this.isActive = true;
     }
 

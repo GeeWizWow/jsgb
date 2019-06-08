@@ -5,7 +5,7 @@ class MemoryBank2 {
         this.cartridge = cartridge;
 
         this.romBankIndex = 0;
-        this.romBank = Buffer.alloc(0x4000);
+        this.romBank = new Uint8Array(0x4000);
     }
 
     copy() {

@@ -1,9 +1,11 @@
 const EventManager = require('../events/eventManager');
 const BufferUtils = require('../utils/bufferUtils');
-const LCD_STATUS = require('./lcdStatus');
+const LCD_STATUS = require('../constants/lcdStatus');
 const INTERRUPT_FLAGS = require('../constants/interruptFlags');
 const LCD_CONTROL = require('../constants/lcdControlFlags');
 const SPRITE_DATA = require('../constants/spriteDataFlags');
+
+const { readInt8 } = require('../utils/bufferUtils');
 
 class Gpu {
     constructor(gameboy) {
@@ -20,12 +22,12 @@ class Gpu {
         this.frameWidth = 160;
         this.fullFrameCycles = 70224;
 
-        this.vram = Buffer.alloc(this.cartridge.isGameboyColour ? 0x4000 : 0x2000);
-        this.bgPaletteMemory = Buffer.alloc(0x40, 0xff);
-        this.spritePaletteMemory = Buffer.alloc(0x40);
-        this.oam = Buffer.alloc(0xa0);
-        this.frameIndices = Buffer.alloc(this.frameWidth * this.frameHeight);
-        this.frameBuffer = Buffer.alloc(this.frameWidth * this.frameHeight * 4);
+        this.vram = new Uint8Array(this.cartridge.isGameboyColour ? 0x4000 : 0x2000);
+        this.bgPaletteMemory = new Uint8Array(0x40, 0xff);
+        this.spritePaletteMemory = new Uint8Array(0x40);
+        this.oam = new Uint8Array(0xa0);
+        this.frameIndices = new Uint8Array(this.frameWidth * this.frameHeight);
+        this.frameBuffer = new Uint8Array(this.frameWidth * this.frameHeight * 4);
 
         this.greyshades = [[224, 248, 208], [136, 192, 112], [52, 104, 86], [8, 24, 32]];
 
@@ -111,7 +113,7 @@ class Gpu {
         if ((value & LCD_CONTROL.EnableLcd) == 0) {
             
             this.frameBuffer.fill(255);
-            this.frameIndices = Buffer.alloc(this.frameIndices.length, 0);
+            this.frameIndices = new Uint8Array(this.frameIndices.length);
 
             this.renderVideoFrame();
 
@@ -201,8 +203,8 @@ class Gpu {
         this.WY = 0;
         this.WX = 0;
 
-        this.vram = Buffer.alloc(this.vram.length);
-        this.bgPaletteMemory = Buffer.alloc(this.bgPaletteMemory.length, 0xff);
+        this.vram = new Uint8Array(this.vram.length);
+        this.bgPaletteMemory = new Uint8Array(this.bgPaletteMemory.length).fill(0xff);
     }
 
     renderScan() {
@@ -309,7 +311,7 @@ class Gpu {
 
             let x = 0;
             let flags = SPRITE_DATA.None;
-            let currentTileData = Buffer.alloc(2);
+            let currentTileData = new Uint8Array(2);
 
             // Render scan line.
             for (let outputX = this.WX - 7; outputX < this.frameWidth; outputX++, x++) {
@@ -399,7 +401,7 @@ class Gpu {
     }
 
     copyTileData(tileMapAddress, tileIndex, tileDataAddress, flags) {
-        let dataIndex = this.vram.readInt8(tileMapAddress + tileIndex);
+        let dataIndex = readInt8(this.vram, tileMapAddress + tileIndex);
 
         if ((this._lcdc & LCD_CONTROL.BgWindowTileDataSelect) != LCD_CONTROL.BgWindowTileDataSelect) {
             // Index is signed number in [-128..127] => compensate for it.
@@ -514,7 +516,7 @@ class Gpu {
     }
 
     writeVRamBlock(address, buffer) {
-        buffer.copy(this.vram, address + this.getVRamOffset());
+        this.vram.set(buffer, address + this.getVRamOffset());
     }
 
     readOam(address) {
@@ -526,7 +528,7 @@ class Gpu {
     }
 
     importOam(oamData) {
-        oamData.copy(this.oam);
+        this.oam = new Uint8Array(oamData);
     }
 
     readRegister(address) {
