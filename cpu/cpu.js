@@ -16,7 +16,7 @@ while the HBlank and VBlank periods are left open so that program code can modif
 */
 
 const initialFrameRate = 60;
-const fullFrameCycles = 100896; // 70224;
+const fullFrameCycles = 4194304 / initialFrameRate; // 70224;
 
 class CPU {
     constructor(gameboy) {
@@ -63,12 +63,12 @@ class CPU {
 
     onTick() {
         if (!this.frameStartTime) {
-            this.frameStartTime = new Date();
+            this.frameStartTime = Date.now();
         }
 
         this.waitForFrame = false;
 
-        const time = new Date();
+        const time = Date.now();
         const delta = (time - this.frameStartTime) / 1000;
 
         this.cyclesPerSecond = this.ticks / delta;
@@ -102,16 +102,16 @@ class CPU {
     start() {
         if (!this.isRunning) {
             this.isRunning = true;
-            this.frameStartTime = new Date();
+            this.frameStartTime = Date.now();
             this.frameStartTickCount = 0;
         }
 
-        setTimeout(this.start.bind(this), 1000 / this.framerate);
-        
         if (this.waitForFrame) {
             return;
         }  
-        
+
+        setTimeout(this.start.bind(this), 1000 / this.framerate);
+
         for (let cycles = 0; cycles < fullFrameCycles;) {
             cycles += this.step();
         }
