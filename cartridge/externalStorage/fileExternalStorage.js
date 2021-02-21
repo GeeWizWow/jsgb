@@ -12,7 +12,7 @@ class ExternalStorage {
     }
 
     initialize(cartridge) {
-        this.path = path.join(process.env.APPDATA, 'jsgb', `${cartridge.getTitle()}.sav`);
+        this.path = path.join(process.env.APPDATA, 'jsgb', `${cartridge.getTitle().toString().replace(/\0/g, '_')}.sav`);
         this.baseStream = new Uint8Array(cartridge.getExternalRamSize());
         this.isActive = true;
 

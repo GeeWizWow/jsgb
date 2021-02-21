@@ -8,8 +8,9 @@ const Keypad = require('./keypad/keypad');
 const Compress = require('./utils/base64String');
 
 class GameBoy {
-    constructor(cartridge) {
+    constructor(cartridge, audioSampleRate) {
         this.cartridge = cartridge;
+        this.audioSampleRate = 0;
 
         this.cpu = new CPU(this);
         this.gpu = new GPU(this);
@@ -41,6 +42,10 @@ class GameBoy {
     terminate() {
         this.components.forEach(c => c.shutdown());
         this.isPoweredOn = false;
+    }
+
+    setSampleRate (audioSampleRate) {
+        this.audioSampleRate = audioSampleRate;
     }
 
     compress(quickSaveData) {

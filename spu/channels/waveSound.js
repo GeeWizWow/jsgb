@@ -86,40 +86,41 @@ class WaveSoundChannel {
     }
 
     channelStep(cycles) {
-        // double cpuSpeedFactor = Spu.Device.Cpu.SpeedFactor;
-        // if (!Active
-        //     || !SoundEnabled
-        //     || double.IsNaN(cpuSpeedFactor)
-        //     || double.IsInfinity(cpuSpeedFactor)
-        //     || cpuSpeedFactor < 0.5)
-        // {
-        //     return;
-        // }
-        // int sampleRate = ChannelOutput.SampleRate;
-        // double timeDelta = (cycles / GameBoyCpu.OfficialClockFrequency) / cpuSpeedFactor;
-        // int sampleCount = (int) (timeDelta * sampleRate) * 2;
-        // float[] buffer = new float[sampleCount];
-        // double interval = 1.0 / Frequency;
-        // int intervalSampleCount = (int) (interval * sampleRate);
-        // if (intervalSampleCount > 0)
-        // {
-        //     for (int i = 0; i < buffer.Length; i += 2)
-        //     {
-        //         _coordinate++;
-        //         if (_coordinate >= intervalSampleCount)
-        //         {
-        //             _top = !_top;
-        //             _coordinate = 0;
-        //         }
-        //         int waveRamCoordinate = (int) (_coordinate / (double) intervalSampleCount * _waveRam.Length);
-        //         int waveDataSample = _top
-        //             ? (_waveRam[waveRamCoordinate] & 0xF)
-        //             : ((_waveRam[waveRamCoordinate] >> 4) & 0xF);
-        //         float sample = ChannelVolume * OutputLevel * (waveDataSample - 7) / 15f;
-        //         Spu.WriteToSoundBuffer(ChannelNumber, buffer, i, sample);
-        //     }
-        // }
-        // ChannelOutput.BufferSoundSamples(buffer, 0, buffer.Length);
+        if (!this.active || this.spu.gameboy.cpu.speedFactor < 0.5) {
+            return new Float32Array(0); 
+        }
+
+        const sampleRate = this.spu.gameboy.audioSampleRate;
+        const timeDelta = (cycles / 4194304) / this.spu.gameboy.cpu.speedFactor;
+
+        const sampleCount =  Math.ceil(timeDelta * sampleRate) * 2;
+        const buffer = new Float32Array(sampleCount);
+
+        const interval = 1 / this.frequency;
+        const intervalSampleCount = interval * sampleRate;
+
+        if (intervalSampleCount > 0) {
+            for (let i = 0; i < buffer.length; i += 2) {
+                this.coordinate++;
+
+                if (this.coordinate >= intervalSampleCount)
+                {
+                    this.top = !this.top;
+                    this.coordinate = 0;
+                }
+
+                const waveRamCoordinate = (this.coordinate / intervalSampleCount * this.waveRam.length);
+                const waveDataSample = this.top
+                    ? (this.waveRam[waveRamCoordinate] & 0xF)
+                    : ((this.waveRam[waveRamCoordinate] >> 4) & 0xF);
+
+                const sample = this.channelVolume * this.OutputLevel * (waveDataSample - 7) / 15.0;
+
+                this.spu.writeToSoundBuffer(this.channelNumber, buffer, i, sample);
+            }
+        }
+
+        return buffer;
     }
 }
 

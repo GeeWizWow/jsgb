@@ -3,11 +3,13 @@ const WaveSoundChannel = require('./channels/waveSound');
 const SquareSweepChannel = require('./channels/squareSweep');
 const SquareChannel = require('./channels/square');
 const BufferUtils = require('../utils/bufferUtils');
+const EventManager = require('../events/eventManager');
 
 class Spu {
     constructor(gameboy) {
         this.gameboy = gameboy;
         this.unused = new Uint8Array(9);
+        this.onBufferSample = new EventManager();
 
         this.waveChannel = new WaveSoundChannel(this);
         this.channels = [new SquareSweepChannel(this), new SquareChannel(this), this.waveChannel, new NoiseChannel(this)];
@@ -72,6 +74,9 @@ class Spu {
 
     initialize() {
         this.reset();
+        this.channels.forEach(c => {
+            c.channelVolume = 0.05;
+        });
     }
 
     reset() {
@@ -103,9 +108,11 @@ class Spu {
 
     spuStep(cycles) {
         if ((this.NR52 & (1 << 7)) != 0) {
-            for (let i = 0; i < this.channels.length; i++) {
-                this.channels[i].channelStep(cycles);
-            }
+            this.onBufferSample.invoke(
+                this.channels.map(function runChannelStep (channel) {
+                    return channel.channelStep(cycles);
+                })
+            );
         }
     }
 

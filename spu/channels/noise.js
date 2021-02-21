@@ -114,37 +114,48 @@ class NoiseChannel {
     }
 
     channelStep(cycles) {
-        // double cpuSpeedFactor = Spu.Device.Cpu.SpeedFactor;
-        // if (!Active || double.IsNaN(cpuSpeedFactor) || double.IsInfinity(cpuSpeedFactor) || cpuSpeedFactor < 0.5)
-        //     return;
-        // // Update volume.
-        // _volumeEnvelope.Update(cycles);
-        // float amplitude = ChannelVolume * _volumeEnvelope.Volume / 15.0f;
-        // // Get elapsed gameboy time.
-        // double timeDelta = (cycles / GameBoyCpu.OfficialClockFrequency) / cpuSpeedFactor;
-        // // Allocate buffer.
-        // int sampleRate = ChannelOutput.SampleRate;
-        // int sampleCount = (int) (timeDelta * sampleRate) * 2;
-        // float[] buffer = new float[sampleCount];
-        // if (!UseSoundLength || _length >= 0)
-        // {
-        //     double period = 1 / Frequency;
-        //     int periodSampleCount = (int) (period * sampleRate) * 2;
-        //     for (int i = 0; i < buffer.Length; i += 2)
-        //     {
-        //         float sample = amplitude * (_lfsr.CurrentValue ? 1f : 0f);
-        //         Spu.WriteToSoundBuffer(ChannelNumber, buffer, i, sample);
-        //         _clock += 2;
-        //         if (_clock >= periodSampleCount)
-        //         {
-        //             _lfsr.PerformShift();
-        //             _clock -= periodSampleCount;
-        //         }
-        //     }
-        //     if (UseSoundLength)
-        //         _length -= timeDelta;
-        // }
-        // ChannelOutput.BufferSoundSamples(buffer, 0, buffer.Length);
+        if (!this.active || this.spu.gameboy.cpu.speedFactor < 0.5) {
+            return new Float32Array(0); 
+        }
+
+        // Update volume.
+        this.volumeEnvelope.update(cycles);
+        const amplitude = this.channelVolume * (this.volumeEnvelope.volume / 15.0);
+
+        // Obtain elapsed gameboy time.
+        const timeDelta = (cycles / 4194304) / this.spu.gameboy.cpu.speedFactor;
+
+        // Allocate buffer.
+        const sampleRate = this.spu.gameboy.audioSampleRate;
+        const sampleCount = Math.ceil(timeDelta * sampleRate) * 2;
+
+        const buffer = new Float32Array(sampleCount);
+
+        if (!this.useSoundLength || this.length >= 0)
+        {
+            const period = 1 / this.frequency;
+            const periodSampleCount = (period * sampleRate) * 2;
+
+            for (let i = 0; i < buffer.length; i += 2)
+            {
+                const sample = amplitude * (this.lsfr.currentValue ? 1.0 : 0.0);
+                this.spu.writeToSoundBuffer(this.channelNumber, buffer, i, sample);
+
+                this.clock += 2;
+
+                if (this.clock >= periodSampleCount)
+                {
+                    this.lsfr.performShift();
+                    this.clock -= periodSampleCount;
+                }
+            }
+
+            if (this.useSoundLength) {
+                this.length -= timeDelta;
+            }
+        }
+
+        return buffer;
     }
 }
 

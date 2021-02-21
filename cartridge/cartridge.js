@@ -5,6 +5,7 @@ const MemoryBank1 = require('./memoryBank/memoryBank1');
 const MemoryBank2 = require('./memoryBank/memoryBank2');
 const MemoryBank3 = require('./memoryBank/memoryBank3');
 const MemoryBank5 = require('./memoryBank/memoryBank5');
+const COLOR_FLAGS = require('../constants/colorSupportFlag');
 
 class Cartridge {
     constructor(buffer, externalMemory) {
@@ -52,19 +53,17 @@ class Cartridge {
         }
     }
 
-    get gameboyTypes() {
-        return {
-            gameboy: 0x00,
-            gameboyColour: 0x80,
-        };
-    }
-
     get isGameboy() {
-        return this.getColour() === this.gameboyTypes.gameboy;
+        return Boolean(
+            this.getColour() === COLOR_FLAGS.ORIGINAL
+        );
     }
 
     get isGameboyColour() {
-        return this.getColour() === this.gameboyTypes.gameboyColour;
+        return Boolean(
+            this.getColour() === COLOR_FLAGS.SUPPORTS_COLOR
+            || this.getColour() === COLOR_FLAGS.COLOR_ONLY
+        );
     }
 
     get cartridgeTypes() {

@@ -148,33 +148,41 @@ class SquareChannel {
     }
 
     channelStep(cycles) {
-        // double cpuSpeedFactor = Spu.Device.Cpu.SpeedFactor;
-        // if (!Active || double.IsNaN(cpuSpeedFactor) || double.IsInfinity(cpuSpeedFactor) || cpuSpeedFactor < 0.5)
-        //     return;
-        // // Update volume and calculate wave amplitude.
-        // _volumeEnvelope.Update(cycles);
-        // double amplitude = ChannelVolume * (_volumeEnvelope.Volume / 15.0);
-        // // Obtain elapsed gameboy time.
-        // double timeDelta = (cycles / GameBoyCpu.OfficialClockFrequency) / cpuSpeedFactor;
-        // // Allocate sound buffer.
-        // int sampleRate = ChannelOutput.SampleRate;
-        // int sampleCount = (int) Math.Ceiling(timeDelta * sampleRate) * 2;
-        // var buffer = new float[sampleCount];
-        // if (!UseSoundLength || _length >= 0)
-        // {
-        //     double period = 1f / Frequency;
-        //     for (int i = 0; i < buffer.Length; i += 2)
-        //     {
-        //         // Get current x coordinate and compute current sample value.
-        //         double x = (double) _coordinate / sampleRate;
-        //         float sample = DutyWave(amplitude, x, period);
-        //         Spu.WriteToSoundBuffer(ChannelNumber, buffer, i, sample);
-        //         _coordinate = (_coordinate + 1) % sampleRate;
-        //     }
-        //     if (UseSoundLength)
-        //         _length -= timeDelta;
-        // }
-        // ChannelOutput.BufferSoundSamples(buffer, 0, buffer.Length);
+        if (!this.active || this.spu.gameboy.cpu.speedFactor < 0.5) {
+            return new Float32Array(0); 
+        }
+
+        // Update volume and calculate wave amplitude.
+        this.volumeEnvelope.update(cycles);
+        const amplitude = this.channelVolume * (this.volumeEnvelope.volume / 15.0);
+
+        // Obtain elapsed gameboy time.
+        const timeDelta = (cycles / 4194304) / this.spu.gameboy.cpu.speedFactor;
+
+        // Allocate sound buffer.
+        const sampleRate = this.spu.gameboy.audioSampleRate;
+        const sampleCount = Math.ceil(timeDelta * sampleRate) * 2;
+
+        const buffer = new Float32Array(sampleCount);
+        if (!this.useSoundLength || this.length >= 0)
+        {
+            const period = 1 / this.frequency;
+            for (let i = 0; i < buffer.length; i += 2)
+            {
+                // Get current x coordinate and compute current sample value.
+                const x = this.coordinate / sampleRate;
+                const sample = this.dutyWave(amplitude, x, period);
+
+                this.spu.writeToSoundBuffer(this.channelNumber, buffer, i, sample);
+                this.coordinate = (this.coordinate + 1) % sampleRate;
+            }
+
+            if (this.useSoundLength) {
+                this.length -= timeDelta;
+            }
+        }
+
+        return buffer;
     }
 }
 

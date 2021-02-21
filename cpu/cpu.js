@@ -18,6 +18,26 @@ while the HBlank and VBlank periods are left open so that program code can modif
 const initialFrameRate = 60;
 const fullFrameCycles = 4194304 / initialFrameRate; // 70224;
 
+class EventTest {
+    constructor() {
+        this.go = false;
+    }
+
+    set() {
+        this.go = true;
+    }
+
+    reset() {
+        this.go = false;
+    }
+
+    wait() {
+        while(!this.go) {
+
+        }
+    }
+}
+
 class CPU {
     constructor(gameboy) {
         this.gameboy = gameboy;
@@ -25,30 +45,35 @@ class CPU {
         this.register = null;
         this.memory = null;
         this.alu = null;
+        this.spu = null;
         
         this.onCpuStep = new EventManager();
         this.isRunning = false;
         this.isHalted = false;
         this.isInCpuStep = false;
         this.waitForFrame = false;
-        
+        this.speedMultipler = 1;
+
         this.ticks = 0;
-        this.interval = null;
         this.cyclesPerSecond = 0;
         this.framesPerSecond = 0;
         this.frameStartTime = 0;
+        this.frameStartTicks = 0;
+        this.frameTask = null;
 
-        this.framerate = initialFrameRate;
+        this.frameSignal = new EventTest();
+        this.interval = setImmediate(this.onTimerTick.bind(this));
     }
 
     get speedFactor () {
-        return Math.round(this.cyclesPerSecond / 4194304 * 100);
+        return this.cyclesPerSecond / 4194304.0;
     }
 
     initialize() {
         this.ticks = 0;
         this.register = this.gameboy.register;
         this.memory = this.gameboy.memory;
+        this.spu = this.gameboy.spu;
 
         this.alu = new Alu(this.register);
     }
@@ -61,23 +86,6 @@ class CPU {
         );
     }
 
-    onTick() {
-        if (!this.frameStartTime) {
-            this.frameStartTime = Date.now();
-        }
-
-        this.waitForFrame = false;
-
-        const time = Date.now();
-        const delta = (time - this.frameStartTime) / 1000;
-
-        this.cyclesPerSecond = this.ticks / delta;
-        this.framesPerSecond = 1 / delta;
-
-        this.frameStartTime = time;
-        this.ticks = 0;
-    }
-
     shutdown() {
         this.terminate();
     }
@@ -85,6 +93,26 @@ class CPU {
     terminate() {
         clearTimeout(this.interval);
         // TODO
+    }
+
+    onTimerTick() {
+        this.frameSignal.set();
+
+        if (!this.frameStartTime) {
+            this.frameStartTime = Date.now();
+        }
+
+        const time = Date.now();
+        const delta = (time - this.frameStartTime) / 1000;
+
+        this.cyclesPerSecond = (this.ticks - this.frameStartTicks) / delta;
+        this.framesPerSecond = 1 / delta;
+
+        this.frameStartTime = time;
+        this.frameStartTicks = this.ticks;
+
+        clearTimeout(this.interval);
+        this.timeout = setTimeout(this.onTimerTick.bind(this), 1000 / initialFrameRate);
     }
 
     readNextInstruction() {
@@ -105,22 +133,31 @@ class CPU {
             this.frameStartTime = Date.now();
             this.frameStartTickCount = 0;
         }
+        
+        this.frameTask = setImmediate(this.frame.bind(this));
+    }
 
-        if (this.waitForFrame) {
+    frame () {
+
+        clearImmediate(this.frameTask);
+        this.frameTask = setImmediate(this.frame.bind(this));
+
+        if (!this.frameSignal.go) {
             return;
-        }  
+        }
 
-        setTimeout(this.start.bind(this), 1000 / this.framerate);
+        this.frameSignal.reset();
 
-        for (let cycles = 0; cycles < fullFrameCycles;) {
+        let cycles = 0;
+
+        while (cycles < (fullFrameCycles * this.speedMultipler)) {
             cycles += this.step();
         }
 
-        this.onTick();
+        this.spu.spuStep(cycles);
     }
 
     step() {
-        this.isInCpuStep = true;
         this.register.IMESet = false;
 
         let cycles;
@@ -152,8 +189,8 @@ class CPU {
             }
         }
 
-        this.onCpuStep.invoke(cycles);
         this.ticks = (this.ticks + cycles);
+        this.onCpuStep.invoke(cycles);
         this.isInCpuStep = false;
 
         return cycles;
